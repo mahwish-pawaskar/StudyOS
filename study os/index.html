@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  (function () {
+    try {
+      var t = JSON.parse(localStorage.getItem('studyos_theme'));
+      document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'pastel');
+    } catch (e) {
+      document.documentElement.setAttribute('data-theme', 'pastel');
+    }
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ===== TOP STATUS BAR ===== -->
+<header class="statusbar">
+  <div class="statusbar__brand">
+    <span class="statusbar__dot"></span>
+    <span class="statusbar__brand-text">STUDY <b>OS</b></span>
+  </div>
+
+  <div class="statusbar__right">
+    <div class="statusbar__readouts">
+      <div class="readout" id="readout-focus" title="Current focus session">
+        <span class="readout__label">SESSION</span>
+        <span class="readout__value" id="focusIndicator">idle</span>
+      </div>
+      <div class="readout" id="readout-streak" title="Study streak">
+        <span class="readout__label">STREAK</span>
+        <span class="readout__value"><span id="streakCount">0</span>d 🔥</span>
+      </div>
+      <div class="readout" id="readout-exam" title="Nearest exam">
+        <span class="readout__label" id="examLabel">NEXT EXAM</span>
+        <span class="readout__value" id="examCountdownMini">— set one —</span>
+      </div>
+      <div class="readout" id="readout-clock">
+        <span class="readout__label" id="clockDate">—</span>
+        <span class="readout__value" id="clockTime">00:00:00</span>
+      </div>
+    </div>
+    <button class="theme-toggle" id="themeToggle" title="Switch theme" type="button">🌙</button>
+  </div>
+</header>
+
+<div class="shell">
+  <!-- ===== SIDE DOCK ===== -->
+  <nav class="dock">
+    <button class="dock__item is-active" data-module="timer">
+      <span class="dock__icon">⏱</span><span class="dock__label">Timer</span>
+    </button>
+    <button class="dock__item" data-module="subjects">
+      <span class="dock__icon">📚</span><span class="dock__label">Subjects</span>
+    </button>
+    <button class="dock__item" data-module="deadlines">
+      <span class="dock__icon">📌</span><span class="dock__label">Deadlines</span>
+    </button>
+    <button class="dock__item" data-module="flashcards">
+      <span class="dock__icon">🗂</span><span class="dock__label">Flashcards</span>
+    </button>
+    <button class="dock__item" data-module="notes">
+      <span class="dock__icon">📝</span><span class="dock__label">Notes</span>
+    </button>
+    <button class="dock__item" data-module="progress">
+      <span class="dock__icon">📊</span><span class="dock__label">Progress</span>
+    </button>
+    <button class="dock__item" data-module="exam">
+      <span class="dock__icon">⏳</span><span class="dock__label">Exams</span>
+    </button>
+  </nav>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="content">
+
+    <!-- ---------- TIMER MODULE ---------- -->
+    <section class="module is-active" id="module-timer">
+      <div class="module__head">
+        <h1>Focus Timer</h1>
+        <p>Pomodoro sessions, logged straight to your subjects.</p>
+      </div>
+
+      <div class="panel timer-panel">
+        <div class="timer-ring-wrap">
+          <svg class="timer-ring" viewBox="0 0 200 200">
+            <circle class="timer-ring__track" cx="100" cy="100" r="90"></circle>
+            <circle class="timer-ring__progress" id="timerRingProgress" cx="100" cy="100" r="90"></circle>
+          </svg>
+          <div class="timer-ring__center">
+            <span class="timer-display" id="timerDisplay">25:00</span>
+            <span class="timer-mode" id="timerMode">FOCUS</span>
+          </div>
+        </div>
+
+        <div class="timer-controls">
+          <div class="field">
+            <label for="timerSubjectSelect">Studying</label>
+            <select id="timerSubjectSelect"><option value="">General</option></select>
+          </div>
+          <div class="timer-buttons">
+            <button class="btn btn--primary" id="timerStartBtn">Start</button>
+            <button class="btn" id="timerPauseBtn" disabled>Pause</button>
+            <button class="btn btn--ghost" id="timerResetBtn">Reset</button>
+          </div>
+          <div class="timer-lengths">
+            <button class="chip is-active" data-focus="25" data-break="5">25 / 5</button>
+            <button class="chip" data-focus="50" data-break="10">50 / 10</button>
+            <button class="chip" data-focus="15" data-break="3">15 / 3</button>
+          </div>
+          <p class="timer-stat">Sessions completed today: <span id="sessionsToday">0</span></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- SUBJECTS MODULE ---------- -->
+    <section class="module" id="module-subjects">
+      <div class="module__head">
+        <h1>Subjects</h1>
+        <p>Track where your hours actually go.</p>
+      </div>
+
+      <form class="inline-form panel" id="subjectForm">
+        <input type="text" id="subjectName" placeholder="Subject name (e.g. Data Structures)" required>
+        <input type="color" id="subjectColor" value="#45D0C0" title="Subject color">
+        <button class="btn btn--primary" type="submit">Add Subject</button>
+      </form>
+
+      <div class="grid" id="subjectList"></div>
+    </section>
+
+    <!-- ---------- DEADLINES MODULE ---------- -->
+    <section class="module" id="module-deadlines">
+      <div class="module__head">
+        <h1>Deadlines</h1>
+        <p>Assignments and what's coming for them.</p>
+      </div>
+
+      <form class="inline-form panel" id="deadlineForm">
+        <input type="text" id="deadlineTitle" placeholder="Assignment title" required>
+        <select id="deadlineSubject"><option value="">No subject</option></select>
+        <input type="date" id="deadlineDate" required>
+        <select id="deadlinePriority">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+        </select>
+        <button class="btn btn--primary" type="submit">Add</button>
+      </form>
+
+      <div class="list" id="deadlineList"></div>
+    </section>
+
+    <!-- ---------- FLASHCARDS MODULE ---------- -->
+    <section class="module" id="module-flashcards">
+      <div class="module__head">
+        <h1>Flashcards</h1>
+        <p>Quiz yourself, deck by deck.</p>
+      </div>
+
+      <div class="panel">
+        <div class="inline-form">
+          <select id="deckSelect"></select>
+          <input type="text" id="newDeckName" placeholder="New deck name">
+          <button class="btn" id="addDeckBtn" type="button">Create Deck</button>
+        </div>
+      </div>
+
+      <div class="flash-layout">
+        <form class="panel" id="flashcardForm">
+          <h3>Add card</h3>
+          <div class="field"><label>Question</label><textarea id="cardQuestion" required></textarea></div>
+          <div class="field"><label>Answer</label><textarea id="cardAnswer" required></textarea></div>
+          <button class="btn btn--primary" type="submit">Add Card</button>
+        </form>
+
+        <div class="panel flash-study">
+          <div class="flashcard" id="flashcard">
+            <div class="flashcard__face flashcard__front" id="flashFront">Add a card to begin</div>
+            <div class="flashcard__face flashcard__back" id="flashBack"></div>
+          </div>
+          <div class="flash-controls">
+            <button class="btn" id="flashPrevBtn">‹ Prev</button>
+            <button class="btn btn--ghost" id="flashFlipBtn">Flip</button>
+            <button class="btn" id="flashNextBtn">Next ›</button>
+          </div>
+          <div class="flash-progress-row">
+            <span id="flashPosition">0 / 0</span>
+            <button class="btn btn--danger btn--sm" id="deleteCardBtn">Delete card</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- NOTES MODULE ---------- -->
+    <section class="module" id="module-notes">
+      <div class="module__head">
+        <h1>Quick Notes</h1>
+        <p>Autosaves as you type.</p>
+      </div>
+
+      <div class="notes-layout">
+        <div class="panel notes-sidebar">
+          <button class="btn btn--primary btn--block" id="newNoteBtn" type="button">+ New Note</button>
+          <div class="notes-list" id="notesList"></div>
+        </div>
+        <div class="panel notes-editor">
+          <input type="text" id="noteTitle" placeholder="Note title" class="note-title-input">
+          <textarea id="noteBody" placeholder="Start typing…"></textarea>
+          <p class="note-saved-indicator" id="noteSavedIndicator">All changes saved</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- PROGRESS MODULE ---------- -->
+    <section class="module" id="module-progress">
+      <div class="module__head">
+        <h1>Progress</h1>
+        <p>The week, in numbers.</p>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-card panel">
+          <span class="stat-card__value" id="statTotalHours">0h</span>
+          <span class="stat-card__label">Total tracked</span>
+        </div>
+        <div class="stat-card panel">
+          <span class="stat-card__value" id="statSessions">0</span>
+          <span class="stat-card__label">Pomodoro sessions</span>
+        </div>
+        <div class="stat-card panel">
+          <span class="stat-card__value" id="statTasksDone">0</span>
+          <span class="stat-card__label">Deadlines cleared</span>
+        </div>
+        <div class="stat-card panel">
+          <span class="stat-card__value" id="statStreak">0</span>
+          <span class="stat-card__label">Day streak</span>
+        </div>
+      </div>
+
+      <div class="chart-row">
+        <div class="panel chart-box">
+          <h3>Hours by subject</h3>
+          <canvas id="chartSubjectHours"></canvas>
+        </div>
+        <div class="panel chart-box">
+          <h3>Sessions, last 7 days</h3>
+          <canvas id="chartWeekSessions"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- EXAM COUNTDOWN MODULE ---------- -->
+    <section class="module" id="module-exam">
+      <div class="module__head">
+        <h1>Exam Countdown</h1>
+        <p>Everything you're racing toward.</p>
+      </div>
+
+      <form class="inline-form panel" id="examForm">
+        <input type="text" id="examName" placeholder="Exam name (e.g. DBMS Mid-Sem)" required>
+        <input type="date" id="examDate" required>
+        <button class="btn btn--primary" type="submit">Add Exam</button>
+      </form>
+
+      <div class="grid" id="examList"></div>
+    </section>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="storage.js"></script>
+<script src="theme.js"></script>
+<script src="clock.js"></script>
+<script src="subjects.js"></script>
+<script src="timer.js"></script>
+<script src="deadlines.js"></script>
+<script src="flashcards.js"></script>
+<script src="notes.js"></script>
+<script src="exams.js"></script>
+<script src="streak.js"></script>
+<script src="progress.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
